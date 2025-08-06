@@ -41,3 +41,15 @@
 2025-08-06 12:07:17.924488 - ❌ ETL failed for linkedin - ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
 2025-08-06 12:07:19.070373 - ❌ ETL failed for facebook - ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
 2025-08-06 12:07:19.089311 - ❌ ETL failed for x - ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207) (SQLExecDirectW); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'created_at'. (207); [42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Statement(s) could not be prepared. (8180)")
+2025-08-06 14:18:45.883304 - ❌ ETL failed for instagram - No module named 'utils'
+2025-08-06 14:18:46.068271 - ❌ ETL failed for facebook - No module named 'utils'
+2025-08-06 14:21:26.301288 - ❌ ETL failed for instagram - No module named 'utils'
+2025-08-06 14:21:26.407058 - ❌ ETL failed for facebook - No module named 'utils'
+2025-08-06 14:24:24.288277 - ❌ ETL failed for instagram - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:24:24.399212 - ❌ ETL failed for facebook - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:30:01.397471 - ❌ ETL failed for instagram - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:30:01.504188 - ❌ ETL failed for facebook - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:36:33.224901 - ❌ ETL failed for instagram - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:36:33.321522 - ❌ ETL failed for facebook - cannot import name 'get_access_token' from 'utils' (C:\Users\rpatel\Downloads\social_etl_project\social_etl\utils\__init__.py)
+2025-08-06 14:40:30.990776 - ❌ ETL failed for instagram - [Errno 2] No such file or directory: 'config/tokens.json'
+2025-08-06 14:40:31.103634 - ❌ ETL failed for facebook - [Errno 2] No such file or directory: 'config/tokens.json'

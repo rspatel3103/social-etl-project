@@ -25,15 +25,18 @@ results.
 """
 
 from __future__ import annotations
-
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from typing import Dict, Any
 
 import requests
+from helpers import get_access_token
+
 
 # Read account ID and token from environment
 ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID")
-ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
+ACCESS_TOKEN = get_access_token("instagram")
 
 # Base URL for the insights endpoint
 INSIGHTS_BASE = f"https://graph.facebook.com/v19.0/{ACCOUNT_ID}/insights"

@@ -1,12 +1,15 @@
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import requests
 from datetime import datetime, timedelta
 from typing import Dict, Any
-
+from helpers import get_access_token
 
 def fetch_insights() -> Dict[str, Any]:
     page_id = os.getenv("FACEBOOK_PAGE_ID")
-    access_token = os.getenv("FACEBOOK_ACCESS_TOKEN")
+    access_token = get_access_token("facebook")
 
     if not page_id or not access_token:
         print("⚠️ FACEBOOK_PAGE_ID or FACEBOOK_ACCESS_TOKEN not set. Returning zeros.")
