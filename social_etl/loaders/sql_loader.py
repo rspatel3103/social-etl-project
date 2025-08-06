@@ -1,4 +1,4 @@
-"""
+""" 
 SQL Server loader.
 
 This module contains functions for writing transformed insights data
@@ -74,7 +74,8 @@ def ensure_table_exists(cursor: pyodbc.Cursor, table_name: str) -> None:
                 profile_views INT,
                 accounts_engaged INT,
                 website_clicks INT,
-                total_interactions INT
+                total_interactions INT,
+                created_at DATETIME
             )
         END
     """, table_name)
@@ -107,6 +108,7 @@ def load_to_sql(data: Dict[str, Any], platform: str) -> None:
         ensure_table_exists(cursor, table_name)
 
         fetch_date = datetime.today().date()
+        created_at = datetime.now()
 
         # Build MERGE statement dynamically with parameter placeholders.
         # Use bracketed table name to avoid reserved words.
@@ -117,10 +119,10 @@ def load_to_sql(data: Dict[str, Any], platform: str) -> None:
             ON target.fetch_date = source.fetch_date
             WHEN MATCHED THEN UPDATE SET
                 reach = ?, profile_views = ?, accounts_engaged = ?,
-                website_clicks = ?, total_interactions = ?
+                website_clicks = ?, total_interactions = ?, created_at = ?
             WHEN NOT MATCHED THEN
-                INSERT (fetch_date, reach, profile_views, accounts_engaged, website_clicks, total_interactions)
-                VALUES (?, ?, ?, ?, ?, ?);
+                INSERT (fetch_date, reach, profile_views, accounts_engaged, website_clicks, total_interactions, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?);
         """
         params = (
             fetch_date,
@@ -129,12 +131,14 @@ def load_to_sql(data: Dict[str, Any], platform: str) -> None:
             int(data.get("accounts_engaged", 0)),
             int(data.get("website_clicks", 0)),
             int(data.get("total_interactions", 0)),
+            created_at,
             fetch_date,
             int(data.get("reach", 0)),
             int(data.get("profile_views", 0)),
             int(data.get("accounts_engaged", 0)),
             int(data.get("website_clicks", 0)),
             int(data.get("total_interactions", 0)),
+            created_at,
         )
         cursor.execute(sql, params)
         conn.commit()
