@@ -30,9 +30,11 @@ import os
 from datetime import datetime
 from importlib import import_module
 from typing import Any, Dict, Tuple, List
-
 from .utils.env_loader import load_env
 from .loaders.sql_loader import load_to_sql
+from .helpers import refresh_if_needed
+
+refresh_if_needed()
 
 
 def save_json_snapshot(data: Dict[str, Any], platform: str, folder: str = "etl_snapshots") -> str:

@@ -35,7 +35,7 @@ from helpers import get_access_token
 
 
 # Read account ID and token from environment
-ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID")
+ACCOUNT_ID = os.getenv("INSTAGRAM_APP_ID")
 ACCESS_TOKEN = get_access_token("instagram")
 
 # Base URL for the insights endpoint

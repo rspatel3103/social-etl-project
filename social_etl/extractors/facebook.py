@@ -8,7 +8,7 @@ from typing import Dict, Any
 from helpers import get_access_token
 
 def fetch_insights() -> Dict[str, Any]:
-    page_id = os.getenv("FACEBOOK_PAGE_ID")
+    page_id = os.getenv("FACEBOOK_APP_ID")
     access_token = get_access_token("facebook")
 
     if not page_id or not access_token:

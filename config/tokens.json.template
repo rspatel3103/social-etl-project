@@ -1,0 +1,10 @@
+{
+  "instagram": {
+    "access_token": "PLACEHOLDER",
+    "refreshed_at": "1970-01-01T00:00:00Z"
+  },
+  "facebook": {
+    "access_token": "PLACEHOLDER",
+    "refreshed_at": "1970-01-01T00:00:00Z"
+  }
+}
