@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any
 from helpers import get_access_token
 
@@ -21,7 +21,6 @@ def fetch_insights() -> Dict[str, Any]:
             "total_interactions": 0
         }
 
-    # Step 1: Fetch reach and profile views
     metrics_url = f"https://graph.facebook.com/v19.0/{page_id}/insights"
     metrics_params = {
         "access_token": access_token,
@@ -40,34 +39,32 @@ def fetch_insights() -> Dict[str, Any]:
         insights_resp.raise_for_status()
         insights_data = insights_resp.json().get("data", [])
 
-        today = datetime.utcnow().date()
+        today = datetime.utcnow().date() - timedelta(days=1)
+
 
         for metric in insights_data:
             name = metric.get("name")
             values = metric.get("values", [])
-            if not values:
-                continue
 
-            value_obj = values[0]
-            value = value_obj.get("value", 0)
-            end_time = value_obj.get("end_time")
+            for value_obj in values:
+                end_time = value_obj.get("end_time")
+                if not end_time:
+                    continue
 
-            if end_time:
                 metric_date = datetime.fromisoformat(end_time.replace("Z", "+00:00")).date()
-                if metric_date != today:
-                    continue  # skip if not today's metric
+                if metric_date == today:
+                    value = value_obj.get("value", 0)
 
-            if name == "page_impressions_unique":
-                page_metrics["reach"] = int(value)
-            elif name == "page_views_total":
-                page_metrics["profile_views"] = int(value)
-            elif name == "page_post_engagements":
-                page_metrics["total_interactions"] = int(value)
+                    if name == "page_impressions_unique":
+                        page_metrics["reach"] = int(value)
+                    elif name == "page_views_total":
+                        page_metrics["profile_views"] = int(value)
+                    elif name == "page_post_engagements":
+                        page_metrics["total_interactions"] = int(value)
 
     except Exception as e:
         print(f"⚠️ Failed to fetch insights metrics: {e}")
 
-    # Estimate accounts_engaged (1 if any interactions, otherwise 0)
     accounts_engaged = 1 if page_metrics["total_interactions"] > 0 else 0
 
     return {

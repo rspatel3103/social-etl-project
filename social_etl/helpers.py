@@ -30,7 +30,7 @@ def get_access_token(platform: str, path=TOKENS_PATH) -> str:
 def should_refresh(refreshed_at_str):
     try:
         last_refresh = datetime.fromisoformat(refreshed_at_str.replace("Z", ""))
-        return datetime.utcnow() - last_refresh > timedelta(days=7)
+        return datetime.utcnow() - last_refresh > timedelta(days=0)
     except Exception:
         return True
 
