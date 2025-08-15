@@ -39,20 +39,6 @@ except ImportError:
     OAuth1 = None  # type: ignore
 
 
-# -----------------------------------------------------------------------------
-# Helpers
-#
-# This module provides an extractor for Twitter/X that fetches engagement
-# metrics for the current day. It uses OAuth 1.0a when full metrics are
-# available (impressions, profile clicks, URL clicks) and falls back to
-# Bearer-only requests for interaction counts when only a bearer token is
-# configured. If an API call fails (for example due to rate limits), the
-# exception is propagated to the caller so that the ETL can skip updating
-# existing data rather than overwriting it with zeros.
-#
-
-
-
 
 def _resolve_user_id(username: str, bearer_token: str) -> Optional[str]:
     """Resolve a Twitter/X username to a numeric user ID using the User Lookup API.
@@ -106,34 +92,7 @@ def _fetch_daily_tweets(
     bearer_token: Optional[str] = None,
     max_results: int = 100,
 ) -> list[dict]:
-    """Fetch tweets posted by the given user during the current day.
-
-
-    Parameters
-    ----------
-    user_id : str
-        The numeric user ID whose tweets to retrieve.
-    auth : OAuth1, optional
-        OAuth 1.0a authentication. If provided, the request will be
-        authenticated using user context and may return non-public metrics.
-    bearer_token : str, optional
-        Bearer token for app-only authentication. Used when ``auth`` is
-        ``None``.
-    max_results : int
-        Maximum number of tweets to return (capped at 100 by the API).
-
-
-    Returns
-    -------
-    list of dict
-        The list of tweet objects returned by the API.
-
-
-    Raises
-    ------
-    Exception
-        If the API call fails or returns an error.
-    """
+    
     start_time, end_time = _get_today_window()
     params = {
         "start_time": start_time,
@@ -259,58 +218,7 @@ def _aggregate_metrics(tweets: list[dict]) -> Dict[str, int]:
 
 
 def fetch_insights() -> Dict[str, Any]:
-    """Fetch engagement metrics for the current day from Twitter/X.
-
-
-    The extractor determines which authentication method to use based on the
-    available environment variables. If all user-context credentials are
-    supplied (``X_API_KEY``, ``X_API_SECRET``, ``X_ACCESS_TOKEN``,
-    ``X_ACCESS_TOKEN_SECRET``), it uses OAuth 1.0a to request non‑public
-    metrics such as impressions and profile clicks. Otherwise, if a
-    bearer token (``X_BEARER_TOKEN``) is provided, it falls back to
-    bearer-only requests which can still retrieve public engagement counts
-    (likes, replies, retweets) but not non-public metrics. If no
-    credentials are configured or if the user ID cannot be resolved, an
-    exception is raised. The caller should catch exceptions to avoid
-    overwriting existing data with zeros.
-
-
-    Environment Variables
-    ---------------------
-    X_BEARER_TOKEN : str (optional)
-        Bearer token for app-only authentication. Required for user ID
-        resolution and for fallback requests when user-context credentials
-        are not available.
-    X_API_KEY : str
-        Consumer API key (used with OAuth 1.0a).
-    X_API_SECRET : str
-        Consumer API secret (used with OAuth 1.0a).
-    X_ACCESS_TOKEN : str
-        Access token (OAuth 1.0a) for the user.
-    X_ACCESS_TOKEN_SECRET : str
-        Access token secret (OAuth 1.0a) for the user.
-    X_USER_ID : str (optional)
-        Numeric X user ID. If not provided, ``X_USERNAME`` must be set.
-    X_USERNAME : str (optional)
-        Username (without @) used to resolve a user ID if ``X_USER_ID`` is not
-        given. Requires a bearer token.
-
-
-    Returns
-    -------
-    dict
-        A dictionary mapping ``reach``, ``profile_views``, ``accounts_engaged``,
-        ``website_clicks`` and ``total_interactions`` to integer values. If
-        there are no tweets today, all values will be zero.
-
-
-    Raises
-    ------
-    Exception
-        If credentials are missing, the user ID cannot be resolved, or the
-        API request fails. Callers should handle exceptions to ensure that
-        errors do not result in zero metrics being written to the database.
-    """
+   
     # Load environment variables
     bearer_token = os.getenv("X_BEARER_TOKEN")
     api_key = os.getenv("X_API_KEY") or os.getenv("X_CONSUMER_KEY")
