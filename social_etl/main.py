@@ -72,6 +72,7 @@ PLATFORMS: List[Tuple[str, str, str]] = [
     ("linkedin", "social_etl.extractors.linkedin", "social_etl.transformers.linkedin"),
     ("facebook", "social_etl.extractors.facebook", "social_etl.transformers.facebook"),
     ("x", "social_etl.extractors.x_platform", "social_etl.transformers.x_platform"),
+    ("GA", "social_etl.extractors.google_analytics", "social_etl.transformers.google_analytics"),
 ]
 
 
