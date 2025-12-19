@@ -1,0 +1,15 @@
+{
+  "reach": 1068,
+  "profile_views": 2515,
+  "accounts_engaged": 737,
+  "website_clicks": 610,
+  "total_interactions": 7815,
+  "sessions": 1298,
+  "new_users": 0,
+  "engagement_rate": 0.5678,
+  "avg_session_duration_sec": 240.43,
+  "events_per_session": 6.0208,
+  "ga_report_date": "2025-12-18",
+  "ga_metrics_json": "{\"active1DayUsers\":985,\"active28DayUsers\":14740,\"active7DayUsers\":4887,\"activeUsers\":985,\"addToCarts\":0,\"adUnitExposure\":0,\"averagePurchaseRevenue\":0,\"averagePurchaseRevenuePerPayingUser\":0,\"averagePurchaseRevenuePerUser\":0,\"averageRevenuePerUser\":0,\"averageSessionDuration\":240.429627257319,\"bounceRate\":0.4322033898305085,\"cartToViewRate\":0,\"checkouts\":0,\"crashAffectedUsers\":0,\"crashFreeUsersRate\":1,\"dauPerMau\":0.06289107393691738,\"dauPerWau\":0.20155514630652752,\"ecommercePurchases\":0,\"engagedSessions\":737,\"engagementRate\":0.5677966101694916,\"eventCount\":7815,\"eventCountPerUser\":7.934010152284264,\"eventsPerSession\":6.020801232665639,\"eventValue\":0,\"firstTimePurchaserRate\":0,\"firstTimePurchasers\":0,\"firstTimePurchasersPerNewUser\":0,\"grossItemRevenue\":0,\"grossPurchaseRevenue\":0,\"itemDiscountAmount\":0,\"itemListClickEvents\":0,\"itemListClickThroughRate\":0,\"itemListViewEvents\":0,\"itemPromotionClickThroughRate\":0,\"itemRefundAmount\":0,\"itemRevenue\":0,\"itemsAddedToCart\":0,\"itemsCheckedOut\":0,\"itemsClickedInList\":0,\"itemsClickedInPromotion\":0,\"itemsPurchased\":0,\"itemsViewed\":0,\"itemsViewedInList\":0,\"itemsViewedInPromotion\":0,\"itemViewEvents\":0,\"keyEvents\":0,\"newUsers\":0,\"promotionClicks\":0,\"promotionViews\":0,\"publisherAdClicks\":0,\"publisherAdImpressions\":0,\"purchaseRevenue\":0,\"purchaserRate\":0,\"purchaseToViewRate\":0,\"refundAmount\":0,\"screenPageViews\":2515,\"screenPageViewsPerSession\":1.9375963020030817,\"screenPageViewsPerUser\":2.553299492385787,\"scrolledUsers\":189,\"sessionKeyEventRate\":0,\"sessions\":1298,\"sessionsPerUser\":1.317766497461929,\"shippingAmount\":0,\"taxAmount\":0,\"totalAdRevenue\":0,\"totalPurchasers\":0,\"totalRevenue\":0,\"totalUsers\":1068,\"transactions\":0,\"transactionsPerPurchaser\":0,\"userEngagementDuration\":34940,\"userKeyEventRate\":0,\"wauPerMau\":0.3120291150555485,\"keyEvents:purchase\":0,\"sessionKeyEventRate:purchase\":0,\"userKeyEventRate:purchase\":0}",
+  "ga_failed_metrics_json": "[\"advertiserAdClicks\",\"advertiserAdCost\",\"advertiserAdCostPerClick\",\"advertiserAdCostPerKeyEvent\",\"advertiserAdImpressions\",\"cohortActiveUsers\",\"cohortTotalUsers\",\"organicGoogleSearchAveragePosition\",\"organicGoogleSearchClicks\",\"organicGoogleSearchClickThroughRate\",\"organicGoogleSearchImpressions\",\"returnOnAdSpend\"]"
+}

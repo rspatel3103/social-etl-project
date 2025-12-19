@@ -1,31 +1,63 @@
 # social_etl/transformers/google_analytics.py
 from __future__ import annotations
-from typing import Dict, Any, Optional
 
-def _i(x: Optional[float | int]) -> int:
-    try: return int(float(x or 0))
-    except: return 0
+import re
+from typing import Dict, Any
 
-def _r2(x: Optional[float]) -> float:
-    try: return round(float(x or 0.0), 2)
-    except: return 0.0
 
-def _r4(x: Optional[float]) -> float:
-    try: return round(float(x or 0.0), 4)
-    except: return 0.0
+_NON_ALNUM_RE = re.compile(r"[^0-9A-Za-z_]")
+_MULTI_UNDERSCORE_RE = re.compile(r"_+")
+
+
+def _sanitize_column(name: str) -> str:
+    """Convert a GA4 metric API name into a SQL-safe column name.
+
+    Examples:
+      keyEvents:purchase -> keyEvents_purchase
+      1DayActiveUsers -> m_1DayActiveUsers
+    """
+    n = (name or "").strip()
+    n = _NON_ALNUM_RE.sub("_", n)
+    n = _MULTI_UNDERSCORE_RE.sub("_", n).strip("_")
+    if not n:
+        return "m_unknown"
+    if n[0].isdigit():
+        n = f"m_{n}"
+    # SQL Server max identifier length is 128; keep some buffer.
+    return n[:120]
+
 
 def transform_insights(raw: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        # base 5
-        "reach":             _i(raw.get("reach")),
-        "profile_views":     _i(raw.get("profile_views")),
-        "accounts_engaged":  _i(raw.get("accounts_engaged")),
-        "website_clicks":    _i(raw.get("website_clicks")),
-        "total_interactions":_i(raw.get("total_interactions")),
-        # GA extras (final)
-        "sessions":                 _i(raw.get("sessions")),
-        "new_users":                _i(raw.get("new_users")),
-        "engagement_rate":          _r4(raw.get("engagement_rate")),
-        "avg_session_duration_sec": _r2(raw.get("avg_session_duration_sec")),
-        "events_per_session":       _r4(raw.get("events_per_session")),
-    }
+    """Flatten GA4 metrics into a column-per-metric payload for SQL Server.
+
+    Expected raw keys (from extractor):
+      - fetch_date: YYYY-MM-DD
+      - website_clicks: int
+      - ga_metrics: dict(api_name -> numeric)
+    """
+    out: Dict[str, Any] = {}
+
+    # Primary key date used by loader.
+    if raw.get("fetch_date"):
+        out["fetch_date"] = raw["fetch_date"]
+
+    # Keep this derived value as its own column.
+    if "website_clicks" in raw:
+        try:
+            out["website_clicks"] = int(raw.get("website_clicks") or 0)
+        except Exception:
+            out["website_clicks"] = 0
+
+    metrics = raw.get("ga_metrics") or {}
+    if isinstance(metrics, dict):
+        for api_name, value in metrics.items():
+            col = _sanitize_column(str(api_name))
+            # Avoid collisions: if two names sanitize to same column, suffix.
+            if col in out:
+                i = 2
+                while f"{col}_{i}" in out:
+                    i += 1
+                col = f"{col}_{i}"
+            out[col] = value
+
+    return out

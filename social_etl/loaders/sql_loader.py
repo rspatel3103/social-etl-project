@@ -16,12 +16,9 @@ already exists. This ensures that running the ETL multiple times per
 day will upsert the most recent metrics without creating duplicate
 rows.
 
-NOTE (2025-11): For the Google Analytics table **GA_insights_daily** only,
-we extend the schema with GA-specific columns (nullable):
-    sessions (INT), new_users (INT),
-    engagement_rate (DECIMAL(6,4)),
-    avg_session_duration_sec (DECIMAL(12,2)),
-    events_per_session (DECIMAL(10,4))
+NOTE (2025-12): For the Google Analytics table **GA_insights_daily** only,
+we store **one column per GA4 metric** (discovered from the GA4 Metadata API),
+and we add new columns automatically when new metrics appear.
 Other platform tables are NOT changed.
 """
 
@@ -29,7 +26,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 import pyodbc
 
@@ -53,6 +50,19 @@ def _is_ga_table(table_name: str) -> bool:
     return table_name.strip().lower() == "ga_insights_daily"
 
 
+def _infer_sql_type(value: Any) -> str:
+    """Infer a SQL Server type for a metric column."""
+    if value is None:
+        return "FLOAT"
+    if isinstance(value, bool):
+        return "INT"
+    if isinstance(value, int):
+        return "BIGINT"
+    if isinstance(value, float):
+        return "FLOAT"
+    return "NVARCHAR(MAX)"
+
+
 def _column_exists(cursor: pyodbc.Cursor, table_name: str, col_name: str) -> bool:
     cursor.execute("""
         SELECT 1
@@ -71,19 +81,13 @@ def _table_exists(cursor: pyodbc.Cursor, table_name: str) -> bool:
     return cursor.fetchone() is not None
 
 
-def _ensure_ga_columns(cursor: pyodbc.Cursor, table_name: str) -> None:
-    """Add GA-only columns to GA_insights_daily if any are missing (nullable)."""
-    ga_cols = [
-        ("sessions", "INT"),
-        ("new_users", "INT"),
-        ("engagement_rate", "DECIMAL(6,4)"),
-        ("avg_session_duration_sec", "DECIMAL(12,2)"),
-        ("events_per_session", "DECIMAL(10,4)"),
-        # key_events removed
-    ]
-    for col, typ in ga_cols:
+def _ensure_columns(cursor: pyodbc.Cursor, table_name: str, cols: Dict[str, str]) -> None:
+    """Add missing columns (nullable)."""
+    for col, typ in cols.items():
+        if col == "fetch_date":
+            continue
         if not _column_exists(cursor, table_name, col):
-            cursor.execute(f"ALTER TABLE [{table_name}] ADD {col} {typ} NULL;")
+            cursor.execute(f"ALTER TABLE [{table_name}] ADD [{col}] {typ} NULL;")
 
 
 def _round2(x: Optional[float]) -> float:
@@ -106,52 +110,51 @@ def ensure_table_exists(cursor: pyodbc.Cursor, table_name: str) -> None:
     """Ensure the target table exists for the given platform.
 
     Non-GA tables: 5 standard columns.
-    GA_insights_daily: same base + GA extras (added if missing).
+    GA_insights_daily: base table (fetch_date, created_at); metric columns are added dynamically.
     """
     safe_table = f"[{table_name}]"
 
     if not _table_exists(cursor, table_name):
-        # Base table create (5 standard columns)
-        cursor.execute(f"""
-            CREATE TABLE {safe_table} (
-                fetch_date DATE PRIMARY KEY,
-                reach INT,
-                profile_views INT,
-                accounts_engaged INT,
-                website_clicks INT,
-                total_interactions INT,
-                created_at DATETIME
-            )
-        """)
-        # If it's GA, immediately extend with GA nullable columns
         if _is_ga_table(table_name):
-            _ensure_ga_columns(cursor, table_name)
+            # GA table stores one column per GA metric (created dynamically).
+            cursor.execute(f"""
+                CREATE TABLE {safe_table} (
+                    fetch_date DATE PRIMARY KEY,
+                    created_at DATETIME
+                )
+            """)
+        else:
+            # Non-GA platforms: base 5 standard columns
+            cursor.execute(f"""
+                CREATE TABLE {safe_table} (
+                    fetch_date DATE PRIMARY KEY,
+                    reach INT,
+                    profile_views INT,
+                    accounts_engaged INT,
+                    website_clicks INT,
+                    total_interactions INT,
+                    created_at DATETIME
+                )
+            """)
         return
 
-    # Table exists already. If GA, add any missing GA columns (nullable).
-    if _is_ga_table(table_name):
-        _ensure_ga_columns(cursor, table_name)
+    # Existing tables: GA columns are added dynamically in load_to_sql.
 
 
 # ------------------------------ Upsert ------------------------------ #
 
 def load_to_sql(data: Dict[str, Any], platform: str) -> None:
-    """Load transformed data into the SQL Server table for a platform.
-
-    For GA, the payload may include:
-      sessions, new_users, engagement_rate, avg_session_duration_sec, events_per_session
-    """
+    """Load transformed data into the SQL Server table for a platform."""
     table_name = f"{platform}_insights_daily"
     is_ga = _is_ga_table(table_name)
 
     conn = _get_connection()
     try:
         cursor = conn.cursor()
-
-        # Ensure table exists (and only extend GA table if needed)
         ensure_table_exists(cursor, table_name)
 
-        fetch_date = datetime.today().date()
+        # Respect the transformer-provided fetch_date when present (e.g., GA pulling yesterday).
+        fetch_date = data.get("fetch_date") or datetime.today().date()
         created_at = datetime.now()
         safe_table = f"[{table_name}]"
 
@@ -188,55 +191,41 @@ def load_to_sql(data: Dict[str, Any], platform: str) -> None:
             conn.commit()
             return
 
-        # --- GA table: extended MERGE with GA extras (nullable) ---
-        sessions = data.get("sessions", None)
-        new_users = data.get("new_users", None)
-        engagement_rate = data.get("engagement_rate", None)
-        avg_sess_dur = data.get("avg_session_duration_sec", None)
-        events_per_session = data.get("events_per_session", None)
+        # --- GA table: dynamic metric columns (one column per metric) ---
 
-        sessions = int(sessions) if sessions is not None else None
-        new_users = int(new_users) if new_users is not None else None
-        engagement_rate = _round4(engagement_rate) if engagement_rate is not None else None
-        avg_sess_dur = _round2(avg_sess_dur) if avg_sess_dur is not None else None
-        events_per_session = _round4(events_per_session) if events_per_session is not None else None
+        # Ensure any missing columns exist before the MERGE.
+        metric_cols: Dict[str, str] = {}
+        for k, v in data.items():
+            if k in {"fetch_date", "created_at"}:
+                continue
+            metric_cols[k] = _infer_sql_type(v)
+        _ensure_columns(cursor, table_name, metric_cols)
+
+        # Build dynamic MERGE.
+        cols = sorted(metric_cols.keys())
+        update_set = ",\n                ".join([f"[{c}] = ?" for c in cols] + ["created_at = ?"])
+        insert_cols = ", ".join(["fetch_date"] + [f"[{c}]" for c in cols] + ["created_at"])
+        insert_vals = ", ".join(["?"] * (1 + len(cols) + 1))
 
         sql_ga = f"""
             MERGE {safe_table} AS target
             USING (SELECT ? AS fetch_date) AS source
             ON target.fetch_date = source.fetch_date
             WHEN MATCHED THEN UPDATE SET
-                reach = ?, profile_views = ?, accounts_engaged = ?,
-                website_clicks = ?, total_interactions = ?, created_at = ?,
-                sessions = ?, new_users = ?, engagement_rate = ?,
-                avg_session_duration_sec = ?, events_per_session = ?
+                {update_set}
             WHEN NOT MATCHED THEN
-                INSERT (
-                    fetch_date, reach, profile_views, accounts_engaged, website_clicks, total_interactions, created_at,
-                    sessions, new_users, engagement_rate, avg_session_duration_sec, events_per_session
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                INSERT ({insert_cols})
+                VALUES ({insert_vals});
         """
-        params_ga = (
-            # MATCHED (update)
-            fetch_date,
-            int(data.get("reach", 0)),
-            int(data.get("profile_views", 0)),
-            int(data.get("accounts_engaged", 0)),
-            int(data.get("website_clicks", 0)),
-            int(data.get("total_interactions", 0)),
-            created_at,
-            sessions, new_users, engagement_rate, avg_sess_dur, events_per_session,
-            # NOT MATCHED (insert)
-            fetch_date,
-            int(data.get("reach", 0)),
-            int(data.get("profile_views", 0)),
-            int(data.get("accounts_engaged", 0)),
-            int(data.get("website_clicks", 0)),
-            int(data.get("total_interactions", 0)),
-            created_at,
-            sessions, new_users, engagement_rate, avg_sess_dur, events_per_session,
-        )
+
+        # Params order:
+        #   1) source.fetch_date
+        #   2) UPDATE values (cols...) + created_at
+        #   3) INSERT values: fetch_date + cols... + created_at
+        update_params = [data.get(c) for c in cols] + [created_at]
+        insert_params = [fetch_date] + [data.get(c) for c in cols] + [created_at]
+        params_ga = tuple([fetch_date] + update_params + insert_params)
+
         cursor.execute(sql_ga, params_ga)
         conn.commit()
     finally:
